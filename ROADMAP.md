@@ -87,14 +87,30 @@ elapsed under them:
   `--spec` on `conform` and `--record` on `diff`. Nothing has ever been removed
   or renamed. The help-text rewrite on 2026-09-24 changed no flag.
 
-Whether four days of one author's use is the *soak* a 1.0 promise implies is a
-judgement, and a different question from whether the promise has held. The
-promise has held, and it is now enforced on both sides rather than on one:
+The promise has held, and it is now enforced on both sides rather than on one:
 `crates/cli/tests/stability.rs` refuses a breaking CLI change the way
 `crates/ir-spec/tests/stability.rs` refuses a breaking schema change. Until it
 existed, the CLI half was enforced by whoever read the diff — and a release
 that only reworded help produced a 34-line diff there, indistinguishable at a
 glance from a renamed flag.
+
+**Both stay open, and not because the work is unfinished.** Read as a version
+interval the criteria are already met: the baselines were frozen during 0.4 and
+0.5.0 shipped two days later with nothing removed. But that interval is what a
+*full minor cycle* is a proxy for, and the thing it stands in for has not
+happened. This repository was 10 days old when 0.5.0 shipped; it has no stars,
+no forks, and every issue not opened by its author was opened by dependabot.
+The release download counts are its own CI, which fetches the last release on
+every pull request.
+
+So two days of nobody needing to change the surface, while nobody was using it,
+is not evidence that it is settled — and #8 says what the promise is for in as
+many words: *a consumer can write against the schema and not have it shift
+underneath them*. No consumer has written against it. **The clock to watch is
+the first outside user, not the calendar**; a week of solo use cannot falsify
+the promise however long it runs. Closing these on elapsed time would be
+claiming a guarantee nothing has tested, which is the failure mode this whole
+project is an argument against.
 
 ## Not doing
 
