@@ -1,6 +1,6 @@
 {
-  "generator": "nunki 0.5.0",
-  "generatedAt": "2026-09-27T16:48:05Z",
+  "generator": "nunki 0.6.0",
+  "generatedAt": "2026-09-27T18:38:34Z",
   "repository": "polyglot-shop",
   "commit": null,
   "commitDate": null,
@@ -305,7 +305,7 @@
   "warnings": [],
   "files": {
     "README.md": "b7d73c033fb4535a",
-    "behaviour.json": "0ca693f8eac711a0",
+    "behaviour.json": "3d709e68eed814d7",
     "diagrams/capabilities-api-gateway.ir.json": "19d31a0729f4b04b",
     "diagrams/capabilities-api-gateway.svg": "10d0e31ef5db2456",
     "diagrams/components-api-gateway.ir.json": "ac2cd3654f551ff8",
@@ -340,7 +340,7 @@
     "diagrams/runtime-compose.svg": "44db35aea28e2a88",
     "diagrams/system-context.ir.json": "fc7ab47e8c980f86",
     "diagrams/system-context.svg": "e9a7f7e624df968d",
-    "index.html": "3ff83d6ec8b51d19",
+    "index.html": "4611d952dfa6b0ef",
     "llms-full.txt": "af82119b044912d5",
     "llms.txt": "821948aae3523a94",
     "pages/01-overview.md": "c796d2fb25d66f7e",
