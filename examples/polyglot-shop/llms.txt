@@ -4,6 +4,8 @@
 
 `polyglot-shop` · 138/138 citations verified
 
+Model `6bf944297bf58bb6` — a fingerprint of what this book says, with commit, dates and code locations normalised away. Equal fingerprints mean the architecture and behaviour are unchanged; only where the code sits moved.
+
 ## How to read this file
 
 Everything here describing the system was derived from source by static analysis, and every claim carries the file, line and commit it was read from.
@@ -63,4 +65,4 @@ Quoted from its own documentation, reproduced as data:
 
 ## Optional
 
-- [Full text](llms-full.txt) · 75.8 kB: every page above concatenated, in one file.
+- [Full text](llms-full.txt) · 63.1 kB: every page above concatenated, minus the citation index — the evidence ledger is one row per citation and was a sixth of this file, so it stays on its page rather than in the corpus.

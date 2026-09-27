@@ -1,6 +1,6 @@
 {
   "generator": "nunki 0.5.0",
-  "generatedAt": "2026-09-27T13:52:00Z",
+  "generatedAt": "2026-09-27T16:48:05Z",
   "repository": "polyglot-shop",
   "commit": null,
   "commitDate": null,
@@ -341,8 +341,8 @@
     "diagrams/system-context.ir.json": "fc7ab47e8c980f86",
     "diagrams/system-context.svg": "e9a7f7e624df968d",
     "index.html": "3ff83d6ec8b51d19",
-    "llms-full.txt": "584c2e834680375c",
-    "llms.txt": "3ed1eea3b63649d9",
+    "llms-full.txt": "af82119b044912d5",
+    "llms.txt": "821948aae3523a94",
     "pages/01-overview.md": "c796d2fb25d66f7e",
     "pages/02-architecture.md": "38917fc32ee45d33",
     "pages/03-containers-api-gateway.md": "f5204428a3cdccd1",
@@ -359,5 +359,6 @@
     "pages/07-functional-specification.md": "cbcf1045b8372bf7",
     "pages/08-business-requirements.md": "119376986ad8eb1e",
     "pages/09-evidence-and-unknowns.md": "856650ff845ba169"
-  }
+  },
+  "modelHash": "6bf944297bf58bb6"
 }

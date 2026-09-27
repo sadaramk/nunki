@@ -223,6 +223,55 @@ fn meta_line(book: &Book) -> String {
     parts.join(" · ")
 }
 
+/// The citation ledger: the heading that opens it, and the table under it.
+///
+/// Matched on the anchor rather than the words, because the anchor is what the
+/// book links to and so cannot drift without something else breaking first.
+fn is_ledger(b: &Block) -> bool {
+    matches!(b, Block::Heading { id, .. } if id == "citation-index")
+}
+
+/// Every block except the ledger: its heading, and everything up to the next
+/// section. A `## Citation index` is the last section on the page today, but
+/// saying so here rather than assuming it means adding a section after it does
+/// not silently start dropping that too.
+fn without_ledger(all: &[Block]) -> Vec<Block> {
+    let mut out = Vec::new();
+    let mut skipping = false;
+    for b in all {
+        if is_ledger(b) {
+            skipping = true;
+            continue;
+        }
+        if skipping {
+            match b {
+                Block::Heading { level: 2, .. } => skipping = false,
+                _ => continue,
+            }
+        }
+        out.push(b.clone());
+    }
+    out
+}
+
+/// What the ledger costs, so the line that replaces it can say so rather than
+/// asking a reader to take "large" on trust.
+fn ledger_size(c: &mut Ctx, all: &[Block]) -> usize {
+    let mut ledger = Vec::new();
+    let mut inside = false;
+    for b in all {
+        if is_ledger(b) {
+            inside = true;
+        } else if inside && matches!(b, Block::Heading { level: 2, .. }) {
+            inside = false;
+        }
+        if inside {
+            ledger.push(b.clone());
+        }
+    }
+    blocks(c, &ledger).len()
+}
+
 /// What a machine reading this book is, and is not, being told.
 ///
 /// nunki reads a repository it does not trust and writes files whose purpose is
@@ -300,7 +349,34 @@ pub fn render(book: &Book, repo_rel: Option<&str>) -> BTreeMap<String, String> {
         }
         md.push_str(&blocks(&mut c, &page.blocks));
         let md = md.replace("\n\n\n", "\n\n");
-        full.push_str(&format!("\n\n---\n\n{md}"));
+
+        // The page keeps its ledger; the corpus does not. One table of one row
+        // per citation was 17% of `llms-full.txt` — the largest single thing in
+        // it, and the least useful per byte to a reader that is trying to
+        // understand a system rather than audit one. It is still the evidence
+        // ledger and it is still on the page, for a person and for the reader.
+        let for_corpus = match page.blocks.iter().any(is_ledger) {
+            false => md.clone(),
+            true => {
+                let mut trimmed = format!("# {}\n\n", escape(&page.title, false));
+                if !summary.trim().is_empty() {
+                    trimmed.push_str(&format!("{summary}\n\n"));
+                }
+                let kept: Vec<Block> = without_ledger(&page.blocks);
+                let mut c = Ctx { book, dir, repo_rel, in_table: false };
+                trimmed.push_str(&blocks(&mut c, &kept));
+                trimmed.push_str(&format!(
+                    "## Citation index\n\nLeft out of this file: {} citations, one row each, about {:.0} kB. \
+                     It is the evidence ledger, not a description of the system — read it at \
+                     [{}](#citation-index) when auditing what a claim rests on.\n\n",
+                    book.cites.len(),
+                    ledger_size(&mut Ctx { book, dir, repo_rel, in_table: false }, &page.blocks) as f64 / 1024.0,
+                    escape(&page.md_path, false),
+                ));
+                trimmed.replace("\n\n\n", "\n\n")
+            }
+        };
+        full.push_str(&format!("\n\n---\n\n{for_corpus}"));
         files.insert(page.md_path.clone(), md);
     }
 
@@ -332,7 +408,7 @@ pub fn unadvertised(path: &str) -> bool {
 ///
 /// Sizes are exact. We are holding the bytes; there is no reason to estimate
 /// and no reason to convert to tokens on the reader's behalf.
-pub fn llms_index(book: &Book, files: &BTreeMap<String, String>) -> String {
+pub fn llms_index(book: &Book, files: &BTreeMap<String, String>, model_hash: &str) -> String {
     let size = |path: &str| files.get(path).map(|t| t.len()).unwrap_or(0);
     let kb = |n: usize| match n {
         0 => String::new(),
@@ -352,6 +428,14 @@ pub fn llms_index(book: &Book, files: &BTreeMap<String, String>) -> String {
         escape(&book.meta.repo, false)
     ));
     llms.push_str(&format!("{}\n\n", meta_line(book)));
+    // What a consumer comparing two books needs and could not get before: one
+    // string that is equal when the system is the same, even though the commit,
+    // the dates and every cited line number differ.
+    llms.push_str(&format!(
+        "Model `{model_hash}` — a fingerprint of what this book says, with commit, dates and code locations \
+         normalised away. Equal fingerprints mean the architecture and behaviour are unchanged; only where the \
+         code sits moved.\n\n"
+    ));
     llms.push_str(trust_boundary());
     if let Some(d) = &book.meta.description {
         llms.push_str("## What the repository says about itself\n\n");
@@ -408,7 +492,9 @@ pub fn llms_index(book: &Book, files: &BTreeMap<String, String>) -> String {
     }
 
     llms.push_str(&format!(
-        "\n## Optional\n\n- [Full text](llms-full.txt){}: every page above concatenated, in one file.\n",
+        "\n## Optional\n\n- [Full text](llms-full.txt){}: every page above concatenated, minus the citation \
+         index — the evidence ledger is one row per citation and was a sixth of this file, so it stays on its \
+         page rather than in the corpus.\n",
         kb(size("llms-full.txt"))
     ));
     llms

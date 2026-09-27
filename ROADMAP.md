@@ -151,6 +151,29 @@ than the list.
   first — is 4,562 characters for the example book, and `llms-full.txt` is
   76,947. ([#59](https://github.com/sadaramk/nunki/issues/59))
 
+- **Ordering the corpus so a consumer's prompt cache survives a commit.**
+  Measured before building, on two generations of one repository differing by a
+  single comment inserted at the top of one file: 93% of `llms-full.txt` was
+  identical, and the first difference was at line 13 — the commit hash sitting
+  in the head, invalidating a cached prefix of 771 bytes, 1% of the file. That
+  much looked like the case for doing it.
+
+  The churn is not positional, which is what kills it. Of the 86 changed lines,
+  3 held the commit hash and **83 were citations of the one file that moved** —
+  spread across the container page, the flows, the API reference, the functional
+  specification and the file counts. One comment moved lines on five pages.
+  Reordering cannot concentrate that, because the churn follows citations and
+  citations are the point. Moving provenance out of the head buys 771 → 3,536
+  bytes, about 875 tokens, which is below the minimum cacheable prefix of the
+  models this would serve. A prefix too small to cache is not worth changing a
+  published artefact for.
+
+  The idea came from `WeKnora`, where it works: its volatile half is the
+  conversation, separable by construction and growing at one end. Ours is line
+  numbers, distributed through every page that cites the moved code. Borrowed
+  insights need measuring against the shape of your own problem.
+  ([#71](https://github.com/sadaramk/nunki/issues/71))
+
 - **Following dispatch that happens at runtime.** Twice investigated, twice
   abandoned. A cross-unit expansion was built and reverted during 0.2 for
   changing nothing on five real repositories; instrumenting the code path

@@ -177,6 +177,32 @@ All notable changes to this project are recorded here. The format follows
   found one the moment it was written — `README.md`, which is this same index
   for a person browsing the repository. (#69)
 
+## [Unreleased]
+
+### Changed
+
+- **`llms-full.txt` no longer carries the citation ledger.** One row per
+  citation was 86% of the evidence page and a sixth of the corpus — the largest
+  single thing an agent loaded, and the least useful per byte to a reader trying
+  to understand a system rather than audit one. The ledger stays on its page,
+  for a person and for the HTML reader; the corpus says in one line what was
+  left out, how large it is and where to read it. The example corpus fell 16%.
+  (#70)
+
+### Added
+
+- **A fingerprint of what a book says, with code locations normalised away.**
+  Published in `llms.txt` and `manifest.json`. Equal fingerprints mean the
+  architecture and behaviour are unchanged and only the code moved — the
+  question a consumer could not answer without diffing 77 kB, after a
+  measurement showed that a comment inserted at the top of one file changed 83
+  lines across five pages while the system described was identical.
+
+  Computed over the typed models, where a code location is a named field, and
+  not over rendered prose, where it would mean guessing which digits are line
+  numbers. A fingerprint that guesses wrong reports a change that did not happen
+  or hides one that did, and neither is a claim worth publishing. (#70)
+
 ## [0.5.0] - 2026-09-23
 
 ### Added

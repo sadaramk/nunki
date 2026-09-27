@@ -138,6 +138,79 @@ pub fn content_hash(s: &str) -> String {
     format!("{h:016x}")
 }
 
+/// Fields that say *where*, *when* and *how big* — never *what*.
+///
+/// Two kinds, and the second was found by testing rather than by design.
+/// Provenance: the commit, the dates, the repository root, and the code
+/// locations every citation carries. `generator` belongs with them because a
+/// nunki version is not a fact about the system — if a new version extracts
+/// something different, the extracted content differs and the hash moves on its
+/// own account.
+///
+/// Then `size`, which holds a node's `"8 files · 190 lines"`. A comment added
+/// to a file changes that string, and a fingerprint that moved because someone
+/// wrote a comment would be reporting a change to the architecture that did not
+/// happen. It appears at exactly one path in the generated JSON
+/// (`/nodes[]/metadata/size`), so matching it by name is unambiguous today;
+/// `model_hash_ignores_where_the_code_sits` is what fails if that stops being
+/// true.
+///
+/// Counts of what a book *claims* — citations made, requirements found — are
+/// deliberately absent from this list. A change in those is a change in the
+/// model.
+const NORMALISED_FIELDS: &[&str] =
+    &["startLine", "endLine", "commit", "commitHash", "generatedAt", "targetRepo", "branch", "generator", "size"];
+
+fn without_provenance(v: &mut Value) {
+    match v {
+        Value::Object(map) => {
+            for (k, val) in map.iter_mut() {
+                if NORMALISED_FIELDS.contains(&k.as_str()) {
+                    *val = Value::Null;
+                } else {
+                    without_provenance(val);
+                }
+            }
+        }
+        Value::Array(a) => a.iter_mut().for_each(without_provenance),
+        _ => {}
+    }
+}
+
+/// What this book says, with where the code sits normalised away.
+///
+/// Measured on #71: a comment inserted at the top of one file changed 83 lines
+/// across five pages, every one of them a citation of that file, while the
+/// system it described was identical. A consumer had no way to tell that apart
+/// from a real change without diffing the whole corpus. This is that answer in
+/// one string.
+///
+/// Computed over the typed models — `behaviour.json` and the diagram IR — and
+/// not over the rendered prose. In those, a code location is a named field, so
+/// normalising it is setting a field to null. Over Markdown it would mean
+/// guessing which digits were line numbers, and a hash that guesses wrong
+/// reports a change that did not happen or hides one that did. Neither is a
+/// claim this project gets to publish.
+///
+/// So it covers the behaviour model and the architecture. It does not cover
+/// page prose, and the name says so.
+pub fn model_hash(files: &BTreeMap<String, String>) -> String {
+    let mut canonical = String::new();
+    for (path, text) in files {
+        let structured = path == "behaviour.json" || (path.starts_with("diagrams/") && path.ends_with(".ir.json"));
+        if !structured {
+            continue;
+        }
+        let Ok(mut v) = serde_json::from_str::<Value>(text) else { continue };
+        without_provenance(&mut v);
+        canonical.push_str(path);
+        canonical.push('\n');
+        canonical.push_str(&v.to_string());
+        canonical.push('\n');
+    }
+    content_hash(&canonical)
+}
+
 fn previous_manifest(out_dir: &Path) -> Option<Value> {
     serde_json::from_str(&std::fs::read_to_string(out_dir.join(MANIFEST)).ok()?).ok()
 }
@@ -186,7 +259,8 @@ pub fn plan(repo: &Path, out_dir: &Path, opts: &BookOptions) -> Result<Planned, 
     // is the one figure here that is left out rather than guessed at.
     //
     // Last, over the finished set: the index can only list what already exists.
-    files.insert("llms.txt".into(), markdown::llms_index(&built.book, &files));
+    let model = model_hash(&files);
+    files.insert("llms.txt".into(), markdown::llms_index(&built.book, &files, &model));
     Ok(Planned { built, files })
 }
 
@@ -334,6 +408,10 @@ fn manifest(planned: &Planned) -> Value {
         })).collect::<Vec<_>>(),
         "warnings": b.warnings,
         "files": planned.files.iter().map(|(k, v)| (k.clone(), Value::String(content_hash(v)))).collect::<serde_json::Map<_, _>>(),
+        // Per-file hashes answer "did this file change". This answers the
+        // question a consumer actually has: "is this the same system, or did
+        // the code just move".
+        "modelHash": model_hash(&planned.files),
     });
     // What the book was read against beside this repository, so `check` can say
     // *which* repository moved rather than only that some file is out of date.
