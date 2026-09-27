@@ -1,6 +1,6 @@
 {
   "generator": "nunki 0.5.0",
-  "generatedAt": "2026-09-27T12:17:32Z",
+  "generatedAt": "2026-09-27T13:52:00Z",
   "repository": "polyglot-shop",
   "commit": null,
   "commitDate": null,
@@ -342,7 +342,7 @@
     "diagrams/system-context.svg": "e9a7f7e624df968d",
     "index.html": "3ff83d6ec8b51d19",
     "llms-full.txt": "584c2e834680375c",
-    "llms.txt": "df9f1681ebc17978",
+    "llms.txt": "3ed1eea3b63649d9",
     "pages/01-overview.md": "c796d2fb25d66f7e",
     "pages/02-architecture.md": "38917fc32ee45d33",
     "pages/03-containers-api-gateway.md": "f5204428a3cdccd1",

@@ -180,6 +180,13 @@ pub fn plan(repo: &Path, out_dir: &Path, opts: &BookOptions) -> Result<Planned, 
     // A generated file like any other: `check` compares it, so the model
     // cannot drift from the prose built beside it.
     files.insert("behaviour.json".into(), built.behaviour.to_json_pretty());
+    // `manifest.json` is written by `generate` rather than planned, because it
+    // hashes what was planned. The index still names it — an agent deciding
+    // whether this book is current needs the file that says so — and its size
+    // is the one figure here that is left out rather than guessed at.
+    //
+    // Last, over the finished set: the index can only list what already exists.
+    files.insert("llms.txt".into(), markdown::llms_index(&built.book, &files));
     Ok(Planned { built, files })
 }
 

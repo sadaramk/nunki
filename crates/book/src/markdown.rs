@@ -304,6 +304,42 @@ pub fn render(book: &Book, repo_rel: Option<&str>) -> BTreeMap<String, String> {
         files.insert(page.md_path.clone(), md);
     }
 
+    files.insert("llms-full.txt".into(), full);
+    files
+}
+
+/// Paths an agent is not pointed at, and why. Every other written file appears
+/// in `llms.txt`, so adding an output means deciding which side it falls on
+/// rather than forgetting it exists — `crates/book/tests/llms.rs` fails when a
+/// path matches neither.
+pub fn unadvertised(path: &str) -> bool {
+    // `llms.txt` is the file being read; `index.html` is the reader's interface,
+    // not a document; an `.svg` is a rendering of the `.ir.json` beside it,
+    // which is the same figure in the form a machine can use; and `README.md`
+    // is this same index written for a person browsing the repository — an
+    // agent holding `llms.txt` would be reading the table of contents twice.
+    path == "llms.txt" || path == "index.html" || path == "README.md" || path.ends_with(".svg")
+}
+
+/// `llms.txt`: what nunki produced, what each part is for, and what it costs.
+///
+/// Written over the finished file set rather than alongside it. The index used
+/// to be built halfway through `render`, before `index.html` and
+/// `behaviour.json` existed — so the structured model of every requirement and
+/// rule, the most useful thing here to a machine, was the one artefact an agent
+/// could not discover. An index assembled before its subject is an index of
+/// whatever happened to exist first.
+///
+/// Sizes are exact. We are holding the bytes; there is no reason to estimate
+/// and no reason to convert to tokens on the reader's behalf.
+pub fn llms_index(book: &Book, files: &BTreeMap<String, String>) -> String {
+    let size = |path: &str| files.get(path).map(|t| t.len()).unwrap_or(0);
+    let kb = |n: usize| match n {
+        0 => String::new(),
+        n if n < 1024 => format!(" · {n} B"),
+        n => format!(" · {:.1} kB", n as f64 / 1024.0),
+    };
+
     let mut llms = format!("# {}\n\n", escape(&book.meta.name, false));
     // The blockquote under the title is the most prominent line in the file and
     // the first thing an agent reads. It used to be the repository's own
@@ -322,21 +358,58 @@ pub fn render(book: &Book, repo_rel: Option<&str>) -> BTreeMap<String, String> {
         llms.push_str("Quoted from its own documentation, reproduced as data:\n\n");
         llms.push_str(&format!("> {}\n\n", escape(d, false)));
     }
-    llms.push_str("## Pages\n\n");
+
+    // Structured first. An agent that reads one thing should read the model,
+    // not the prose describing it: the same facts, already parsed, and the
+    // provenance needed to decide whether they are current.
+    llms.push_str("## Structured model\n\n");
+    llms.push_str(&format!(
+        "- [behaviour.json](behaviour.json){}: every functional requirement and business rule as data — \
+         trigger, contract, state changed, and the file, line and commit each was read from.\n",
+        kb(size("behaviour.json"))
+    ));
+    llms.push_str(&format!(
+        "- [manifest.json](manifest.json){}: what this book was generated from and whether it still holds — \
+         commit, citation health, and a hash per file.\n",
+        kb(size("manifest.json"))
+    ));
+    // Listed unconditionally and unsized, like the manifest: `authored.json` is
+    // the one file in the directory nunki does not own. It is created once and
+    // never regenerated, so it is not among the planned files whose bytes are
+    // in hand — but an agent asking why a system exists should be told where
+    // the only answer to that can come from.
+    llms.push_str(&format!(
+        "- [{a}]({a}): the answers a person gave to what source cannot answer — the problem, the goals, the \
+         stakeholders. Written by hand and never regenerated; what is unanswered there is an open question, \
+         not a default.\n",
+        a = crate::authored::AUTHORED
+    ));
+
+    llms.push_str("\n## Pages\n\n");
     for page in &book.pages {
         llms.push_str(&format!(
-            "- [{}]({}): {}\n",
+            "- [{}]({}){}: {}\n",
             escape(&page.title, false),
             dest(&page.md_path),
+            kb(size(&page.md_path)),
             escape(&plain(&page.summary, &book.cites), false)
         ));
     }
+
     llms.push_str("\n## Diagrams (typed DiagramIR JSON)\n\n");
     for f in book.diagrams.values() {
-        llms.push_str(&format!("- [{}]({}): {}\n", escape(&f.id, false), dest(&f.ir_path), escape(&f.title, false)));
+        llms.push_str(&format!(
+            "- [{}]({}){}: {}\n",
+            escape(&f.id, false),
+            dest(&f.ir_path),
+            kb(size(&f.ir_path)),
+            escape(&f.title, false)
+        ));
     }
-    llms.push_str("\n## Optional\n\n- [Full text](llms-full.txt): every page concatenated\n");
-    files.insert("llms.txt".into(), llms);
-    files.insert("llms-full.txt".into(), full);
-    files
+
+    llms.push_str(&format!(
+        "\n## Optional\n\n- [Full text](llms-full.txt){}: every page above concatenated, in one file.\n",
+        kb(size("llms-full.txt"))
+    ));
+    llms
 }

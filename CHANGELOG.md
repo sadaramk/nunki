@@ -154,6 +154,29 @@ All notable changes to this project are recorded here. The format follows
   Nothing is stripped or rewritten — quoting the source verbatim and citing it
   is the product. What changed is the frame. (#68)
 
+## [Unreleased]
+
+### Fixed
+
+- **`llms.txt` now describes the directory it sits in.** It listed the Markdown
+  pages and the diagram IR and stopped there, so `behaviour.json` — every
+  requirement and rule already parsed, with the evidence behind each — was
+  written beside it and named nowhere. An agent reading the index went off to
+  parse prose for facts that were sitting in JSON next to it. `manifest.json`
+  and `authored.json` were invisible the same way.
+
+  The cause was ordering: the index was assembled halfway through rendering,
+  before `index.html` and `behaviour.json` existed, so it could only ever list
+  what happened to exist first. It is built last now, over the finished file
+  set, which is also what lets every entry carry its exact size — the figure an
+  agent needs to choose what to read under a budget, and one we are holding the
+  bytes for rather than estimating.
+
+  A test makes the omission unrepeatable: every file the book writes must be
+  named in the index or listed as deliberately excluded, with the reason. It
+  found one the moment it was written — `README.md`, which is this same index
+  for a person browsing the repository. (#69)
+
 ## [0.5.0] - 2026-09-23
 
 ### Added
