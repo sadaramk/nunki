@@ -23,7 +23,7 @@ RUN git config --system --add safe.directory '*'
 ENTRYPOINT ["nunki"]
 
 # Browser journeys against HTML produced by the release binary.
-FROM mcr.microsoft.com/playwright:v1.63.0-noble AS e2e
+FROM mcr.microsoft.com/playwright:v1.64.1-noble AS e2e
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/*
